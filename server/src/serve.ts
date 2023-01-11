@@ -1,10 +1,13 @@
 import express from 'express'
-import users from './routers/users'
+import bodyParser from 'body-parser'
+import usersRouters from './routers/usersRouters'
 
 const app = express()
 const port = 3333
 
-app.use('/users', users.router)
+app.use(bodyParser.json())
+
+app.use('/', usersRouters.router)
 
 app.listen(port, () =>
   console.log(`servidor rodando em http://localhost:${port}`)

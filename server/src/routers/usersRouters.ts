@@ -1,24 +1,26 @@
 import { Router } from 'express'
 
-import usersControllers, { IUsersControllers } from '../controllers/users'
+import usersControllers, {
+  IUsersControllers,
+} from '../controllers/usersControllers'
 
 interface IUsers {
-  usersRouters(): void
+  userRoutes(): void
 }
 
 class Users implements IUsers {
-  private router: Router
-  controllers: IUsersControllers
+  public router: Router
+  private controllers: IUsersControllers
 
   constructor() {
     this.router = Router()
     this.controllers = usersControllers
 
-    this.usersRouters()
+    this.userRoutes()
   }
 
-  usersRouters() {
-    this.router.get('/', this.controllers.userUm)
+  userRoutes() {
+    this.router.post('/register', this.controllers.userRegister)
     this.router.get('/testedois', this.controllers.userDois)
     this.router.get('/testetres', this.controllers.userTres)
   }

@@ -1,23 +1,15 @@
 import * as mysql from 'mysql2'
 
-class DBConnection {
-  public connection: mysql.Connection
+const connection = mysql.createConnection({
+  host: 'localhost',
+  user: 'root',
+  password: 'root',
+  database: 'challenge-yourself',
+})
 
-  constructor() {
-    this.connection = mysql.createConnection({
-      host: 'localhost',
-      user: 'root',
-      password: 'root',
-      database: 'challenge',
-    })
-  }
+connection.connect((error) => {
+  if (error) throw error
+  console.log('Connected to MySQL!')
+})
 
-  connect() {
-    this.connection.connect((error) => {
-      if (error) throw error
-      console.log('Connected to MySQL!')
-    })
-  }
-}
-
-export default DBConnection
+export default connection
