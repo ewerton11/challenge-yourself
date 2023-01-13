@@ -1,15 +1,17 @@
 import { Request, Response } from 'express'
+import bcrypt from 'bcrypt'
+import jwt from 'jsonwebtoken'
 
 import DBConnection from '../../database/connection'
+import { RowDataPacket } from 'mysql2'
 
 export interface IUsersControllers {
   userRegister(req: Request, res: Response): void
-  userDois(req: Request, res: Response): void
-  userTres(req: Request, res: Response): void
+  userLogin(req: Request, res: Response): void
 }
 
-interface ReqBody {
-  first_name: string
+interface IReqBody {
+  user: string
   email: string
   password: string
 }
@@ -17,34 +19,34 @@ interface ReqBody {
 class usersControllers implements IUsersControllers {
   userRegister(req: Request, res: Response) {
     try {
-      const { first_name, email, password } = req.body as ReqBody
+      const { user, email, password } = req.body as IReqBody
 
       const checkEmail = 'SELECT email FROM users WHERE email = ?'
 
-      DBConnection.query(checkEmail, email, (err, results: []) => {
-        if (err) throw err
+      DBConnection.query(checkEmail, email, async (error, row: []) => {
+        if (error) throw error
 
-        if (!first_name || !email || !password) {
-          return res
-            .status(400)
-            .send({ message: 'Invalid name, email or password' })
+        if (!user || !email || !password) {
+          res.status(400).send({ message: 'Invalid name, email or password' })
+          return
         }
 
-        if (results.length > 0) {
-          return res.status(400).send({ message: 'Email already registered' })
+        if (row.length > 0) {
+          res.status(400).send({ message: 'Email already registered' })
+          return
         }
 
-        const registerUser = 'INSERT INTO users SET ?'
+        const queryRegisterUser = 'INSERT INTO users SET ?'
 
-        DBConnection.query(
-          registerUser,
-          { first_name, email, password },
-          (err) => {
-            if (err) throw err
+        const hashPassword = await bcrypt.hash(password, 10)
+        const registerUser = { user, email, hashPassword }
 
-            return res.status(200).send({ message: 'Successfully registered' })
-          }
-        )
+        DBConnection.query(queryRegisterUser, registerUser, (error) => {
+          if (error) throw error
+
+          res.status(201).send({ message: 'Successfully registered' })
+          return
+        })
       })
     } catch (error) {
       console.error(error)
@@ -52,12 +54,51 @@ class usersControllers implements IUsersControllers {
     }
   }
 
-  userDois(req: Request, res: Response) {
-    res.send({ message: 'USER DOIS' })
-  }
+  async userLogin(req: Request, res: Response) {
+    try {
+      const { email, password } = req.body as IReqBody
 
-  userTres(req: Request, res: Response) {
-    res.send({ message: 'USER TRÊS' })
+      const queryUserValidation = 'SELECT * FROM users WHERE email = ?'
+      //  AND hashPassword = ?
+
+      const userValidation = [email]
+
+      DBConnection.query(
+        queryUserValidation,
+        userValidation,
+        async (error, row: RowDataPacket[]) => {
+          if (error) throw error
+
+          if (!email || !password) {
+            res.status(400).send({ message: 'Invalid email or password' })
+            return
+          }
+
+          if (row.length === 0) {
+            res.status(400).send({ message: 'Invalid email' })
+            return
+          }
+
+          const hashPassword = row[0].hashPassword
+          const isMatch = await bcrypt.compare(password, hashPassword)
+
+          if (isMatch) {
+            const payload = { id: row[0].id, email: row[0].email }
+
+            const token = jwt.sign(payload, 'secret', { expiresIn: '1d' })
+
+            res.status(200).send({ email, token })
+            return
+          }
+
+          res.status(400).send({ message: 'Invalid password' })
+          return
+        }
+      )
+    } catch (error) {
+      console.log(error)
+      res.status(500).send({ message: 'Internal server error' })
+    }
   }
 }
 

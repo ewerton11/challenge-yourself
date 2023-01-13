@@ -21,8 +21,8 @@ class Users implements IUsers {
 
   userRoutes() {
     this.router.post('/register', this.controllers.userRegister)
-    this.router.get('/testedois', this.controllers.userDois)
-    this.router.get('/testetres', this.controllers.userTres)
+    this.router.post('/login', this.controllers.userLogin)
+    //adicionar alteração de nome ou senha
   }
 }
 
