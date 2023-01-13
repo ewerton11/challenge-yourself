@@ -7,9 +7,4 @@ const connection = mysql.createConnection({
   database: 'challenge-yourself',
 })
 
-connection.connect((error) => {
-  if (error) throw error
-  console.log('Connected to MySQL!')
-})
-
 export default connection
